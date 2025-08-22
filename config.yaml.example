@@ -1,0 +1,33 @@
+# Discord MCP Server Configuration
+
+discord:
+  # Your Discord bot token (required)
+  # You can also set this via DISCORD_TOKEN environment variable
+  token: "YOUR_BOT_TOKEN_HERE"
+  
+  # Optional: Default guild ID to use if not specified in requests
+  guild_id: ""
+  
+  # Optional: List of guild IDs this bot is allowed to operate in
+  # If empty, bot can operate in any guild it has access to
+  allowed_guilds: []
+  
+  # Maximum message length (Discord limit is 2000)
+  max_message_length: 2000
+  
+  # Rate limiting: max requests per minute
+  rate_limit_per_minute: 30
+
+mcp:
+  # MCP server name
+  server_name: "discord-mcp"
+  
+  # Server version
+  version: "1.0.0"
+
+server:
+  # Log level: debug, info, warn, error
+  log_level: "info"
+  
+  # Enable debug mode
+  debug: false
