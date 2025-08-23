@@ -31,3 +31,14 @@ server:
   
   # Enable debug mode
   debug: false
+
+events:
+  # Enable or disable event streaming
+  enabled: true
+  
+  # List of events to stream to the client
+  # Available events: discord/messageCreated, discord/guildMemberAdded, discord/messageReactionAdded
+  allowed_events:
+    - "discord/messageCreated"
+    - "discord/guildMemberAdded"
+    - "discord/messageReactionAdded"

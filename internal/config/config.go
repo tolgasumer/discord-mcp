@@ -12,6 +12,7 @@ type Config struct {
 	Discord DiscordConfig `yaml:"discord"`
 	MCP     MCPConfig     `yaml:"mcp"`
 	Server  ServerConfig  `yaml:"server"`
+	Events  EventsConfig  `yaml:"events"`
 }
 
 // DiscordConfig holds Discord-specific configuration
@@ -35,6 +36,12 @@ type ServerConfig struct {
 	Debug    bool   `yaml:"debug"`
 }
 
+// EventsConfig holds event streaming configuration
+type EventsConfig struct {
+	Enabled       bool     `yaml:"enabled"`
+	AllowedEvents []string `yaml:"allowed_events"`
+}
+
 // DefaultConfig returns a configuration with sensible defaults
 func DefaultConfig() *Config {
 	return &Config{
@@ -50,6 +57,14 @@ func DefaultConfig() *Config {
 		Server: ServerConfig{
 			LogLevel: "info",
 			Debug:    false,
+		},
+		Events: EventsConfig{
+			Enabled: true,
+			AllowedEvents: []string{
+				"discord/messageCreated",
+				"discord/guildMemberAdded",
+				"discord/messageReactionAdded",
+			},
 		},
 	}
 }

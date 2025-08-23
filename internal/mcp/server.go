@@ -12,17 +12,19 @@ import (
 
 	"discord-mcp/internal/config"
 	"discord-mcp/internal/discord"
+	"discord-mcp/internal/notifications"
 	"discord-mcp/pkg/types"
 )
 
 // Server implements the MCP server
 type Server struct {
-	config      *config.Config
-	logger      *logrus.Logger
-	discord     *discord.Client
-	tools       map[string]ToolHandler
-	initialized bool
-	mutex       sync.RWMutex
+	config          *config.Config
+	logger          *logrus.Logger
+	discord         *discord.Client
+	tools           map[string]ToolHandler
+	initialized     bool
+	mutex           sync.RWMutex
+	notificationSvc *notifications.Service
 }
 
 // ToolHandler defines the interface for tool handlers
@@ -45,7 +47,7 @@ func NewServer(cfg *config.Config, logger *logrus.Logger, discordClient *discord
 func (s *Server) RegisterTool(handler ToolHandler) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	
+
 	tool := handler.GetDefinition()
 	s.tools[tool.Name] = handler
 	s.logger.Debugf("Registered tool: %s", tool.Name)
@@ -54,6 +56,10 @@ func (s *Server) RegisterTool(handler ToolHandler) {
 // Start starts the MCP server
 func (s *Server) Start() error {
 	s.logger.Info("Starting MCP server...")
+
+	// Create the notification service and pass it to the Discord client
+	s.notificationSvc = notifications.NewService(os.Stdout, s.logger)
+	s.discord.SetupEventHandlers(s.notificationSvc)
 
 	// Connect to Discord
 	if err := s.discord.Connect(); err != nil {
@@ -67,18 +73,18 @@ func (s *Server) Start() error {
 // Stop stops the MCP server
 func (s *Server) Stop() error {
 	s.logger.Info("Stopping MCP server...")
-	
+
 	if err := s.discord.Disconnect(); err != nil {
 		s.logger.Warnf("Error disconnecting from Discord: %v", err)
 	}
-	
+
 	return nil
 }
 
 // handleCommunication handles JSON-RPC communication over stdin/stdout
 func (s *Server) handleCommunication(input io.Reader, output io.Writer) error {
 	scanner := bufio.NewScanner(input)
-	
+
 	for scanner.Scan() {
 		line := scanner.Text()
 		if line == "" {
@@ -96,7 +102,7 @@ func (s *Server) handleCommunication(input io.Reader, output io.Writer) error {
 			}
 
 			s.logger.Debugf("Sending: %s", string(responseJSON))
-			
+
 			if _, err := fmt.Fprintln(output, string(responseJSON)); err != nil {
 				s.logger.Errorf("Failed to write response: %v", err)
 				return err
@@ -196,7 +202,7 @@ func (s *Server) handleInitialized(req types.Request) *types.Response {
 	s.mutex.Lock()
 	s.initialized = true
 	s.mutex.Unlock()
-	
+
 	s.logger.Info("Client initialized successfully")
 	return nil // Notifications don't get responses
 }

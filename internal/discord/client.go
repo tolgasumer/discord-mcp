@@ -9,18 +9,20 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"discord-mcp/internal/config"
+	"discord-mcp/internal/notifications"
 )
 
 // Client wraps the Discord session and provides higher-level operations
 type Client struct {
-	session *discordgo.Session
-	config  *config.Config
-	logger  *logrus.Logger
-	
+	session    *discordgo.Session
+	config     *config.Config
+	logger     *logrus.Logger
+	dispatcher *EventDispatcher
+
 	// Connection state
 	connected bool
 	mutex     sync.RWMutex
-	
+
 	// Rate limiting
 	rateLimiter *rateLimiter
 }
@@ -42,22 +44,40 @@ func NewClient(cfg *config.Config, logger *logrus.Logger) (*Client, error) {
 	}
 
 	// Configure session
-	session.Identify.Intents = discordgo.IntentsGuildMessages | 
-		discordgo.IntentsDirectMessages | 
+	session.Identify.Intents = discordgo.IntentsGuildMessages |
+		discordgo.IntentsDirectMessages |
 		discordgo.IntentsGuilds |
-		discordgo.IntentsGuildMembers
+		discordgo.IntentsGuildMembers |
+		discordgo.IntentsGuildMessageReactions
 
 	client := &Client{
-		session: session,
-		config:  cfg,
-		logger:  logger,
+		session:     session,
+		config:      cfg,
+		logger:      logger,
 		rateLimiter: newRateLimiter(cfg.Discord.RateLimitPerMinute, time.Minute),
 	}
 
-	// Set up event handlers
-	client.setupEventHandlers()
-
 	return client, nil
+}
+
+// SetupEventHandlers sets up the event handlers for the Discord client
+func (c *Client) SetupEventHandlers(notificationSvc *notifications.Service) {
+	c.dispatcher = NewEventDispatcher(c.logger, notificationSvc, &c.config.Events)
+
+	c.session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
+		c.logger.WithFields(logrus.Fields{
+			"username": r.User.Username,
+			"id":       r.User.ID,
+		}).Info("Discord bot is ready")
+	})
+
+	c.session.AddHandler(func(s *discordgo.Session, d *discordgo.Disconnect) {
+		c.logger.Warn("Disconnected from Discord")
+	})
+
+	c.session.AddHandler(c.dispatcher.HandleMessageCreate)
+	c.session.AddHandler(c.dispatcher.HandleGuildMemberAdd)
+	c.session.AddHandler(c.dispatcher.HandleMessageReactionAdd)
 }
 
 // Connect connects to Discord
@@ -70,7 +90,7 @@ func (c *Client) Connect() error {
 	}
 
 	c.logger.Info("Connecting to Discord...")
-	
+
 	if err := c.session.Open(); err != nil {
 		return fmt.Errorf("failed to open Discord connection: %w", err)
 	}
@@ -90,7 +110,7 @@ func (c *Client) Disconnect() error {
 	}
 
 	c.logger.Info("Disconnecting from Discord...")
-	
+
 	if err := c.session.Close(); err != nil {
 		return fmt.Errorf("failed to close Discord connection: %w", err)
 	}
@@ -178,7 +198,7 @@ func (c *Client) SendMessage(channelID, content string) (*discordgo.Message, err
 
 	// Validate message length
 	if len(content) > c.config.Discord.MaxMessageLength {
-		return nil, fmt.Errorf("message exceeds maximum length of %d characters", 
+		return nil, fmt.Errorf("message exceeds maximum length of %d characters",
 			c.config.Discord.MaxMessageLength)
 	}
 
@@ -237,6 +257,11 @@ func (c *Client) setupEventHandlers() {
 	c.session.AddHandler(func(s *discordgo.Session, d *discordgo.Disconnect) {
 		c.logger.Warn("Disconnected from Discord")
 	})
+
+	// Register event dispatcher handlers
+	c.session.AddHandler(c.dispatcher.HandleMessageCreate)
+	c.session.AddHandler(c.dispatcher.HandleGuildMemberAdd)
+	c.session.AddHandler(c.dispatcher.HandleMessageReactionAdd)
 }
 
 // Session returns the underlying DiscordGo session for advanced operations
@@ -276,7 +301,7 @@ func (rl *rateLimiter) Allow() bool {
 	defer rl.mutex.Unlock()
 
 	now := time.Now()
-	
+
 	// Remove old requests outside the time window
 	cutoff := now.Add(-rl.duration)
 	var validReqs []time.Time
