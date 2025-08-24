@@ -283,14 +283,12 @@ func (s *Server) handleToolCall(req types.Request) *types.Response {
 	s.logger.Debugf("Executing tool: %s", params.Name)
 	result, err := handler.Execute(params)
 	if err != nil {
-		s.logger.Errorf("Tool execution failed: %v", err)
-		result = types.CallToolResult{
-			IsError: true,
-			Content: []types.Content{
-				{
-					Type: "text",
-					Text: err.Error(),
-				},
+		return &types.Response{
+			JSONRPC: types.JSONRPCVersion,
+			ID:      req.ID,
+			Error: &types.Error{
+				Code:    types.InternalError,
+				Message: fmt.Sprintf("Tool execution failed: %v", err),
 			},
 		}
 	}
