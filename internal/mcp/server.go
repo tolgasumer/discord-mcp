@@ -216,9 +216,14 @@ func (s *Server) handleToolsList(req types.Request) *types.Response {
 		return &types.Response{
 			JSONRPC: types.JSONRPCVersion,
 			ID:      req.ID,
-			Error: &types.Error{
-				Code:    types.InvalidRequest,
-				Message: "Server not initialized",
+			Result: types.ErrorResult{
+				IsError: true,
+				Content: []types.Content{
+					{
+						Type: "text",
+						Text: "Server not initialized",
+					},
+				},
 			},
 		}
 	}
@@ -248,9 +253,14 @@ func (s *Server) handleToolCall(req types.Request) *types.Response {
 		return &types.Response{
 			JSONRPC: types.JSONRPCVersion,
 			ID:      req.ID,
-			Error: &types.Error{
-				Code:    types.InvalidRequest,
-				Message: "Server not initialized",
+			Result: types.CallToolResult{
+				IsError: true,
+				Content: []types.Content{
+					{
+						Type: "text",
+						Text: "Server not initialized",
+					},
+				},
 			},
 		}
 	}
@@ -273,9 +283,14 @@ func (s *Server) handleToolCall(req types.Request) *types.Response {
 		return &types.Response{
 			JSONRPC: types.JSONRPCVersion,
 			ID:      req.ID,
-			Error: &types.Error{
-				Code:    types.MethodNotFound,
-				Message: fmt.Sprintf("Tool not found: %s", params.Name),
+			Result: types.CallToolResult{
+				IsError: true,
+				Content: []types.Content{
+					{
+						Type: "text",
+						Text: fmt.Sprintf("Tool not found: %s", params.Name),
+					},
+				},
 			},
 		}
 	}
@@ -286,9 +301,14 @@ func (s *Server) handleToolCall(req types.Request) *types.Response {
 		return &types.Response{
 			JSONRPC: types.JSONRPCVersion,
 			ID:      req.ID,
-			Error: &types.Error{
-				Code:    types.InternalError,
-				Message: fmt.Sprintf("Tool execution failed: %v", err),
+			Result: types.CallToolResult{
+				IsError: true,
+				Content: []types.Content{
+					{
+						Type: "text",
+						Text: fmt.Sprintf("Tool execution failed: %v", err),
+					},
+				},
 			},
 		}
 	}
@@ -302,9 +322,65 @@ func (s *Server) handleToolCall(req types.Request) *types.Response {
 
 // handlePing handles ping requests
 func (s *Server) handlePing(req types.Request) *types.Response {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	if !s.initialized {
+		return &types.Response{
+			JSONRPC: types.JSONRPCVersion,
+			ID:      req.ID,
+			Result: types.CallToolResult{
+				IsError: true,
+				Content: []types.Content{
+					{
+						Type: "text",
+						Text: "Server not initialized",
+					},
+				},
+			},
+		}
+	}
+
+	handler, exists := s.tools["ping"]
+	if !exists {
+		return &types.Response{
+			JSONRPC: types.JSONRPCVersion,
+			ID:      req.ID,
+			Result: types.CallToolResult{
+				IsError: true,
+				Content: []types.Content{
+					{
+						Type: "text",
+						Text: "Tool not found: ping",
+					},
+				},
+			},
+		}
+	}
+
+	s.logger.Debugf("Executing tool: ping")
+	result, err := handler.Execute(types.CallToolParams{
+		Name: "ping",
+	})
+	if err != nil {
+		return &types.Response{
+			JSONRPC: types.JSONRPCVersion,
+			ID:      req.ID,
+			Result: types.CallToolResult{
+				IsError: true,
+				Content: []types.Content{
+					{
+						Type: "text",
+						Text: fmt.Sprintf("Tool execution failed: %v", err),
+					},
+				},
+			},
+		}
+	}
+
 	return &types.Response{
 		JSONRPC: types.JSONRPCVersion,
 		ID:      req.ID,
-		Result:  map[string]string{"status": "pong"},
+		Result:  result,
 	}
 }

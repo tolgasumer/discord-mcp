@@ -233,6 +233,42 @@ Here is an example of a notification the client might receive when a new user jo
 }
 ```
 
+#### Error Handling
+
+The server uses two different structures for error responses, depending on the nature of the error.
+
+1.  **Protocol-Level Errors**: For issues related to the JSON-RPC protocol itself (e.g., a malformed request or a method that doesn't exist), the server returns a standard top-level `error` object, as defined by the JSON-RPC 2.0 specification.
+
+    ```json
+    {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "error": {
+        "code": -32601,
+        "message": "Method not found: non_existent_method"
+      }
+    }
+    ```
+
+2.  **Application-Level Errors**: For errors that occur within the application's logic (e.g., a tool fails, a resource is not found, or the server is not yet initialized), the error is returned *inside* the `result` object. This is to accommodate specific client-side validators.
+
+    ```json
+    // Error when calling "tools/list" before the server is initialized
+    {
+      "jsonrpc": "2.0",
+      "id": 2,
+      "result": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Server not initialized"
+          }
+        ]
+      }
+    }
+    ```
+
 For more detailed, end-to-end scenarios showing how to combine these patterns, see our **[Real-World Usage Examples](EXAMPLES.md)**.
 
 ### Claude Desktop Guide

@@ -73,7 +73,7 @@ func (t *SendMessageTool) Execute(params types.CallToolParams) (types.CallToolRe
 
 		embeds = make([]*discordgo.MessageEmbed, len(embedsSlice))
 		for i, embedData := range embedsSlice {
-			embed, err := t.parseEmbed(embedData)
+			embed, err := parseEmbed(embedData)
 			if err != nil {
 				return validation.FormatValidationError(fmt.Errorf("invalid embed at index %d: %w", i, err)), nil
 			}
@@ -119,14 +119,14 @@ func (t *SendMessageTool) Execute(params types.CallToolParams) (types.CallToolRe
 			Type: "text",
 			Text: fmt.Sprintf("✅ Message sent successfully to <#%s>", channelID),
 			Data: map[string]interface{}{
-				"message_id":    message.ID,
-				"channel_id":    channelID,
-				"content":       message.Content,
-				"timestamp":     message.Timestamp.Format(time.RFC3339),
-				"tts":           message.TTS,
-				"embed_count":   len(message.Embeds),
-				"has_reply":     replyTo != "",
-				"message_url":   fmt.Sprintf("https://discord.com/channels/%s/%s/%s", message.GuildID, channelID, message.ID),
+				"message_id":  message.ID,
+				"channel_id":  channelID,
+				"content":     message.Content,
+				"timestamp":   message.Timestamp.Format(time.RFC3339),
+				"tts":         message.TTS,
+				"embed_count": len(message.Embeds),
+				"has_reply":   replyTo != "",
+				"message_url": fmt.Sprintf("https://discord.com/channels/%s/%s/%s", message.GuildID, channelID, message.ID),
 			},
 		}},
 	}, nil
@@ -135,80 +135,6 @@ func (t *SendMessageTool) Execute(params types.CallToolParams) (types.CallToolRe
 // GetDefinition returns the tool definition
 func (t *SendMessageTool) GetDefinition() types.Tool {
 	return validation.GetToolDefinition("send_message", "Send a message to a Discord channel with support for embeds, replies, and TTS")
-}
-
-// parseEmbed converts interface{} to discordgo.MessageEmbed
-func (t *SendMessageTool) parseEmbed(embedData interface{}) (*discordgo.MessageEmbed, error) {
-	embedMap, ok := embedData.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("embed must be an object")
-	}
-
-	embed := &discordgo.MessageEmbed{}
-
-	// Title
-	if title, ok := embedMap["title"].(string); ok {
-		embed.Title = title
-	}
-
-	// Description
-	if description, ok := embedMap["description"].(string); ok {
-		embed.Description = description
-	}
-
-	// Color
-	if color, ok := embedMap["color"]; ok {
-		if colorInt, ok := color.(int); ok {
-			embed.Color = colorInt
-		} else if colorFloat, ok := color.(float64); ok {
-			embed.Color = int(colorFloat)
-		}
-	}
-
-	// URL
-	if url, ok := embedMap["url"].(string); ok {
-		embed.URL = url
-	}
-
-	// Thumbnail
-	if thumbnail, ok := embedMap["thumbnail"].(map[string]interface{}); ok {
-		if thumbURL, ok := thumbnail["url"].(string); ok {
-			embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: thumbURL}
-		}
-	}
-
-	// Image
-	if image, ok := embedMap["image"].(map[string]interface{}); ok {
-		if imgURL, ok := image["url"].(string); ok {
-			embed.Image = &discordgo.MessageEmbedImage{URL: imgURL}
-		}
-	}
-
-	// Fields
-	if fields, ok := embedMap["fields"].([]interface{}); ok {
-		embed.Fields = make([]*discordgo.MessageEmbedField, len(fields))
-		for i, fieldData := range fields {
-			fieldMap, ok := fieldData.(map[string]interface{})
-			if !ok {
-				return nil, fmt.Errorf("field at index %d must be an object", i)
-			}
-
-			field := &discordgo.MessageEmbedField{}
-			if name, ok := fieldMap["name"].(string); ok {
-				field.Name = name
-			}
-			if value, ok := fieldMap["value"].(string); ok {
-				field.Value = value
-			}
-			if inline, ok := fieldMap["inline"].(bool); ok {
-				field.Inline = inline
-			}
-
-			embed.Fields[i] = field
-		}
-	}
-
-	return embed, nil
 }
 
 // formatError creates a standardized error response
@@ -255,6 +181,10 @@ func (t *GetChannelMessagesTool) Execute(params types.CallToolParams) (types.Cal
 		} else if limitInt, ok := limitVal.(int); ok {
 			limit = limitInt
 		}
+	}
+
+	if limit > 100 {
+		limit = 100
 	}
 
 	var beforeID, afterID, aroundID string
@@ -378,8 +308,8 @@ func (t *GetChannelMessagesTool) formatMessage(msg *discordgo.Message) map[strin
 	}
 
 	return map[string]interface{}{
-		"id":          msg.ID,
-		"content":     msg.Content,
+		"id":      msg.ID,
+		"content": msg.Content,
 		"author": map[string]interface{}{
 			"id":            msg.Author.ID,
 			"username":      msg.Author.Username,
@@ -387,18 +317,18 @@ func (t *GetChannelMessagesTool) formatMessage(msg *discordgo.Message) map[strin
 			"avatar":        msg.Author.Avatar,
 			"bot":           msg.Author.Bot,
 		},
-		"timestamp":     msg.Timestamp.Format(time.RFC3339),
-		"edited":        msg.EditedTimestamp != nil,
-		"tts":           msg.TTS,
+		"timestamp":        msg.Timestamp.Format(time.RFC3339),
+		"edited":           msg.EditedTimestamp != nil,
+		"tts":              msg.TTS,
 		"mention_everyone": msg.MentionEveryone,
-		"mentions":      t.formatMentions(msg.Mentions),
-		"attachments":   attachments,
-		"embeds":        embeds,
-		"reactions":     reactions,
-		"pinned":        msg.Pinned,
-		"type":          int(msg.Type),
-		"flags":         int(msg.Flags),
-		"message_url":   fmt.Sprintf("https://discord.com/channels/%s/%s/%s", msg.GuildID, msg.ChannelID, msg.ID),
+		"mentions":         t.formatMentions(msg.Mentions),
+		"attachments":      attachments,
+		"embeds":           embeds,
+		"reactions":        reactions,
+		"pinned":           msg.Pinned,
+		"type":             int(msg.Type),
+		"flags":            int(msg.Flags),
+		"message_url":      fmt.Sprintf("https://discord.com/channels/%s/%s/%s", msg.GuildID, msg.ChannelID, msg.ID),
 	}
 }
 
@@ -469,7 +399,7 @@ func (t *EditMessageTool) Execute(params types.CallToolParams) (types.CallToolRe
 
 		newEmbeds = make([]*discordgo.MessageEmbed, len(embedsSlice))
 		for i, embedData := range embedsSlice {
-			embed, err := t.parseEmbed(embedData)
+			embed, err := parseEmbed(embedData)
 			if err != nil {
 				return validation.FormatValidationError(fmt.Errorf("invalid embed at index %d: %w", i, err)), nil
 			}
@@ -511,12 +441,12 @@ func (t *EditMessageTool) Execute(params types.CallToolParams) (types.CallToolRe
 			Type: "text",
 			Text: fmt.Sprintf("✏️ Message edited successfully in <#%s>", channelID),
 			Data: map[string]interface{}{
-				"message_id":      message.ID,
-				"channel_id":      channelID,
-				"new_content":     message.Content,
+				"message_id":       message.ID,
+				"channel_id":       channelID,
+				"new_content":      message.Content,
 				"edited_timestamp": message.EditedTimestamp.Format(time.RFC3339),
-				"embed_count":     len(message.Embeds),
-				"message_url":     fmt.Sprintf("https://discord.com/channels/%s/%s/%s", message.GuildID, channelID, message.ID),
+				"embed_count":      len(message.Embeds),
+				"message_url":      fmt.Sprintf("https://discord.com/channels/%s/%s/%s", message.GuildID, channelID, message.ID),
 			},
 		}},
 	}, nil
@@ -525,80 +455,6 @@ func (t *EditMessageTool) Execute(params types.CallToolParams) (types.CallToolRe
 // GetDefinition returns the tool definition
 func (t *EditMessageTool) GetDefinition() types.Tool {
 	return validation.GetToolDefinition("edit_message", "Edit a Discord message's content or embeds")
-}
-
-// parseEmbed converts interface{} to discordgo.MessageEmbed (shared with SendMessageTool)
-func (t *EditMessageTool) parseEmbed(embedData interface{}) (*discordgo.MessageEmbed, error) {
-	embedMap, ok := embedData.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("embed must be an object")
-	}
-
-	embed := &discordgo.MessageEmbed{}
-
-	// Title
-	if title, ok := embedMap["title"].(string); ok {
-		embed.Title = title
-	}
-
-	// Description
-	if description, ok := embedMap["description"].(string); ok {
-		embed.Description = description
-	}
-
-	// Color
-	if color, ok := embedMap["color"]; ok {
-		if colorInt, ok := color.(int); ok {
-			embed.Color = colorInt
-		} else if colorFloat, ok := color.(float64); ok {
-			embed.Color = int(colorFloat)
-		}
-	}
-
-	// URL
-	if url, ok := embedMap["url"].(string); ok {
-		embed.URL = url
-	}
-
-	// Thumbnail
-	if thumbnail, ok := embedMap["thumbnail"].(map[string]interface{}); ok {
-		if thumbURL, ok := thumbnail["url"].(string); ok {
-			embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: thumbURL}
-		}
-	}
-
-	// Image
-	if image, ok := embedMap["image"].(map[string]interface{}); ok {
-		if imgURL, ok := image["url"].(string); ok {
-			embed.Image = &discordgo.MessageEmbedImage{URL: imgURL}
-		}
-	}
-
-	// Fields
-	if fields, ok := embedMap["fields"].([]interface{}); ok {
-		embed.Fields = make([]*discordgo.MessageEmbedField, len(fields))
-		for i, fieldData := range fields {
-			fieldMap, ok := fieldData.(map[string]interface{})
-			if !ok {
-				return nil, fmt.Errorf("field at index %d must be an object", i)
-			}
-
-			field := &discordgo.MessageEmbedField{}
-			if name, ok := fieldMap["name"].(string); ok {
-				field.Name = name
-			}
-			if value, ok := fieldMap["value"].(string); ok {
-				field.Value = value
-			}
-			if inline, ok := fieldMap["inline"].(bool); ok {
-				field.Inline = inline
-			}
-
-			embed.Fields[i] = field
-		}
-	}
-
-	return embed, nil
 }
 
 // formatError creates a standardized error response
@@ -763,13 +619,13 @@ func (t *AddReactionTool) Execute(params types.CallToolParams) (types.CallToolRe
 			Type: "text",
 			Text: fmt.Sprintf("👍 Added reaction %s to message in <#%s>", emoji, channelID),
 			Data: map[string]interface{}{
-				"message_id":       messageID,
-				"channel_id":       channelID,
-				"emoji":            emoji,
-				"formatted_emoji":  formattedEmoji,
-				"is_custom_emoji":  t.isCustomEmoji(emoji),
-				"added_at":         time.Now().Format(time.RFC3339),
-				"message_url":      fmt.Sprintf("https://discord.com/channels/%s/%s/%s", "", channelID, messageID), // Guild ID not available here
+				"message_id":      messageID,
+				"channel_id":      channelID,
+				"emoji":           emoji,
+				"formatted_emoji": formattedEmoji,
+				"is_custom_emoji": t.isCustomEmoji(emoji),
+				"added_at":        time.Now().Format(time.RFC3339),
+				"message_url":     fmt.Sprintf("https://discord.com/channels/%s/%s/%s", "@me", channelID, messageID), // Guild ID is not available in this context, so we use @me to link to the channel.
 			},
 		}},
 	}, nil
@@ -794,6 +650,80 @@ func (t *AddReactionTool) formatEmoji(emoji string) string {
 
 	// For Unicode emojis, return as-is
 	return emoji
+}
+
+// parseEmbed converts interface{} to discordgo.MessageEmbed
+func parseEmbed(embedData interface{}) (*discordgo.MessageEmbed, error) {
+	embedMap, ok := embedData.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("embed must be an object")
+	}
+
+	embed := &discordgo.MessageEmbed{}
+
+	// Title
+	if title, ok := embedMap["title"].(string); ok {
+		embed.Title = title
+	}
+
+	// Description
+	if description, ok := embedMap["description"].(string); ok {
+		embed.Description = description
+	}
+
+	// Color
+	if color, ok := embedMap["color"]; ok {
+		if colorInt, ok := color.(int); ok {
+			embed.Color = colorInt
+		} else if colorFloat, ok := color.(float64); ok {
+			embed.Color = int(colorFloat)
+		}
+	}
+
+	// URL
+	if url, ok := embedMap["url"].(string); ok {
+		embed.URL = url
+	}
+
+	// Thumbnail
+	if thumbnail, ok := embedMap["thumbnail"].(map[string]interface{}); ok {
+		if thumbURL, ok := thumbnail["url"].(string); ok {
+			embed.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: thumbURL}
+		}
+	}
+
+	// Image
+	if image, ok := embedMap["image"].(map[string]interface{}); ok {
+		if imgURL, ok := image["url"].(string); ok {
+			embed.Image = &discordgo.MessageEmbedImage{URL: imgURL}
+		}
+	}
+
+	// Fields
+	if fields, ok := embedMap["fields"].([]interface{}); ok {
+		embed.Fields = make([]*discordgo.MessageEmbedField, len(fields))
+		for i, fieldData := range fields {
+			fieldMap, ok := fieldData.(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("field at index %d must be an object", i)
+			}
+
+			field := &discordgo.MessageEmbedField{}
+			if name, ok := fieldMap["name"].(string); ok {
+				field.Name = name
+			}
+			if value, ok := fieldMap["value"].(string); ok {
+				field.Value = value
+			}
+			if inline, ok := fieldMap["inline"].(bool); ok {
+				field.Inline = inline
+			}
+
+			embed.Fields[i] = field
+		}
+	}
+
+	return embed, nil
 }
 
 // isCustomEmoji checks if an emoji is a custom Discord emoji

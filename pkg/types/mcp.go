@@ -54,9 +54,9 @@ type InitializeParams struct {
 
 // InitializeResult contains the result of initialization
 type InitializeResult struct {
-	ProtocolVersion string                `json:"protocolVersion"`
-	Capabilities    ServerCapabilities    `json:"capabilities"`
-	ServerInfo      ServerInfo            `json:"serverInfo"`
+	ProtocolVersion string             `json:"protocolVersion"`
+	Capabilities    ServerCapabilities `json:"capabilities"`
+	ServerInfo      ServerInfo         `json:"serverInfo"`
 }
 
 // ServerCapabilities describes what the server can do
@@ -92,6 +92,12 @@ type Tool struct {
 // ToolsListResult contains the list of available tools
 type ToolsListResult struct {
 	Tools []Tool `json:"tools"`
+}
+
+// ErrorResult represents a generic error response inside the result field.
+type ErrorResult struct {
+	IsError bool      `json:"isError"`
+	Content []Content `json:"content"`
 }
 
 // CallToolParams contains parameters for tool calls

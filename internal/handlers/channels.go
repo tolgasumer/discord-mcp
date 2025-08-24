@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/sirupsen/logrus"
@@ -143,15 +144,22 @@ func channelTypeToString(channelType discordgo.ChannelType) string {
 // formatChannel formats a single channel for the response
 func (t *ListChannelsTool) formatChannel(channel *discordgo.Channel, includePerms bool) map[string]interface{} {
 	data := map[string]interface{}{
-		"id":         channel.ID,
-		"name":       channel.Name,
-		"type":       channelTypeToString(channel.Type),
-		"position":   channel.Position,
-		"nsfw":       channel.NSFW,
-		"parent_id":  channel.ParentID,
-		"guild_id":   channel.GuildID,
-		"topic":      channel.Topic,
-		"created_at": channel.LastMessageID, // This is not correct, but there is no direct created_at field
+		"id":        channel.ID,
+		"name":      channel.Name,
+		"type":      channelTypeToString(channel.Type),
+		"position":  channel.Position,
+		"nsfw":      channel.NSFW,
+		"parent_id": channel.ParentID,
+		"guild_id":  channel.GuildID,
+		"topic":     channel.Topic,
+	}
+
+	createdAt, err := discordgo.SnowflakeTimestamp(channel.ID)
+	if err != nil {
+		t.handler.logger.Warnf("Could not parse snowflake ID %s: %v", channel.ID, err)
+		data["created_at"] = "error"
+	} else {
+		data["created_at"] = createdAt.Format(time.RFC3339)
 	}
 
 	if includePerms {
@@ -243,15 +251,22 @@ func (t *GetChannelInfoTool) GetDefinition() types.Tool {
 // formatChannel formats a single channel for the response
 func (t *GetChannelInfoTool) formatChannel(channel *discordgo.Channel, includePerms bool) map[string]interface{} {
 	data := map[string]interface{}{
-		"id":         channel.ID,
-		"name":       channel.Name,
-		"type":       channelTypeToString(channel.Type),
-		"position":   channel.Position,
-		"nsfw":       channel.NSFW,
-		"parent_id":  channel.ParentID,
-		"guild_id":   channel.GuildID,
-		"topic":      channel.Topic,
-		"created_at": channel.LastMessageID, // This is not correct, but there is no direct created_at field
+		"id":        channel.ID,
+		"name":      channel.Name,
+		"type":      channelTypeToString(channel.Type),
+		"position":  channel.Position,
+		"nsfw":      channel.NSFW,
+		"parent_id": channel.ParentID,
+		"guild_id":  channel.GuildID,
+		"topic":     channel.Topic,
+	}
+
+	createdAt, err := discordgo.SnowflakeTimestamp(channel.ID)
+	if err != nil {
+		t.handler.logger.Warnf("Could not parse snowflake ID %s: %v", channel.ID, err)
+		data["created_at"] = "error"
+	} else {
+		data["created_at"] = createdAt.Format(time.RFC3339)
 	}
 
 	if includePerms {
