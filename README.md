@@ -235,27 +235,7 @@ Here is an example of a notification the client might receive when a new user jo
 
 For more detailed, end-to-end scenarios showing how to combine these patterns, see our **[Real-World Usage Examples](EXAMPLES.md)**.
 
-## Architecture
-
-The server is designed with a clean separation of concerns. The following diagram illustrates the high-level data flow between the client, the server's components, and the Discord API.
-
-```
-+-----------------+      +------------------+      +------------------+
-|                 |      |                  |      |                  |
-|   MCP Client    |----->|    MCP Server    |<---->|  Discord Client  |
-| (e.g., AI Agent)|      |  (stdin/stdout)  |      |  (discordgo)     |
-|                 |      |                  |      |                  |
-+-------+---------+      +--------+---------+      +---------+--------+
-        ^                         |                        |
-        | (Notifications)         | (Tool Calls)           | (API Events)
-        |                         |                        |
-+-------+---------+               |                        v
-|                 |               v                +------------------+
-| Notification Svc|      +--------+---------+      |                  |
-|                 |      |  Tool Handlers  |      |   Discord API    |
-+-----------------+      +------------------+      |                  |
-                                                   +------------------+
-```
+## Structure
 
 ```
 discord-mcp/
