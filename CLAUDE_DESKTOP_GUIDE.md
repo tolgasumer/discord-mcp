@@ -62,8 +62,10 @@ Replace the content of the `claude_desktop_config.json` file with the following 
     *   **Windows Example:** `"D:\\repo\\discord-mcp\\discord-mcp.exe"` (Note the double backslashes).
     *   **UNIX (Linux/macOS) Example:** `"/home/user/discord-mcp/discord-mcp"`.
 *   **`args`**: This field can be left as an empty array `[]` if you are using the default `config.yaml` file name and location.
-*   **`env`**: This is where you provide environment variables to the server. 
-    *   Replace `"YOUR_DISCORD_BOT_TOKEN_HERE"` with your actual Discord bot token.
+*   **`env`**: This is where you provide environment variables to the server. You have two options for providing the Discord token:
+    1.  **(Recommended)** Set the token in a `config.yaml` file. If you do this, you can remove the `"env"` section completely from the `claude_desktop_config.json` file.
+    2.  Set the `DISCORD_TOKEN` environment variable here. Replace `"YOUR_DISCORD_BOT_TOKEN_HERE"` with your actual Discord bot token. **Note:** The environment variable will override the token in `config.yaml` if both are set.
+
 
 
 ### 3. Save and Restart
