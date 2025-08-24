@@ -40,7 +40,13 @@ Now, you will use the built-in editor in Claude Desktop to configure it to launc
 
 ### 2. Add the MCP Server Configuration
 
-Replace the content of the `claude_desktop_config.json` file with the following JSON structure:
+When Claude Desktop launches the `discord-mcp` server, it does not set the working directory to the project folder. This means the server cannot find the `config.yaml` file on its own. Therefore, you must provide the Discord token to the server through the Claude Desktop configuration. There are two ways to do this:
+
+#### Option 1: Using Environment Variables (Recommended)
+
+This is the most straightforward method. You provide the Discord token directly to the server through an environment variable.
+
+In your `claude_desktop_config.json` file, use the following structure:
 
 ```json
 {
@@ -58,13 +64,31 @@ Replace the content of the `claude_desktop_config.json` file with the following 
 
 **Important:**
 
-*   **`command`**: Replace `"path/to/your/discord-mcp/executable"` with the **absolute path** to the `discord-mcp` executable you created in Step 1.
-    *   **Windows Example:** `"D:\\repo\\discord-mcp\\discord-mcp.exe"` (Note the double backslashes).
-    *   **UNIX (Linux/macOS) Example:** `"/home/user/discord-mcp/discord-mcp"`.
-*   **`args`**: This field can be left as an empty array `[]` if you are using the default `config.yaml` file name and location.
-*   **`env`**: This is where you provide environment variables to the server. You have two options for providing the Discord token:
-    1.  **(Recommended)** Set the token in a `config.yaml` file. If you do this, you can remove the `"env"` section completely from the `claude_desktop_config.json` file.
-    2.  Set the `DISCORD_TOKEN` environment variable here. Replace `"YOUR_DISCORD_BOT_TOKEN_HERE"` with your actual Discord bot token. **Note:** The environment variable will override the token in `config.yaml` if both are set.
+*   **`command`**: Replace `"path/to/your/discord-mcp/executable"` with the **absolute path** to the `discord-mcp` executable.
+*   **`env`**: Replace `"YOUR_DISCORD_BOT_TOKEN_HERE"` with your actual Discord bot token.
+
+#### Option 2: Using a Config File
+
+If you prefer to use a `config.yaml` file for your configuration, you must tell the server where to find it by providing the path as a command-line argument.
+
+In your `claude_desktop_config.json` file, use the following structure:
+
+```json
+{
+  "mcpServers": {
+    "discord-mcp": {
+      "command": "path/to/your/discord-mcp/executable",
+      "args": ["-config", "path/to/your/config.yaml"],
+      "env": {}
+    }
+  }
+}
+```
+
+**Important:**
+
+*   **`command`**: Replace `"path/to/your/discord-mcp/executable"` with the **absolute path** to the `discord-mcp` executable. On Windows, you must use double backslashes (\\) for the path.
+*   **`args`**: Replace `"path/to/your/config.yaml"` with the **absolute path** to your `config.yaml` file. On Windows, you must use double backslashes (\\) for the path.
 
 
 
