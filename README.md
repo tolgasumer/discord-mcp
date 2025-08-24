@@ -235,6 +235,10 @@ Here is an example of a notification the client might receive when a new user jo
 
 For more detailed, end-to-end scenarios showing how to combine these patterns, see our **[Real-World Usage Examples](EXAMPLES.md)**.
 
+### Claude Desktop Guide
+
+For a guide on how to use the MCP server with Claude Desktop, please see the [Claude Desktop Guide](CLAUDE_DESKTOP_GUIDE.md).
+
 ## Structure
 
 ```
