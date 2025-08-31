@@ -91,10 +91,8 @@ Event streaming can be enabled and filtered in `config.yaml`.
 
 ### Installation
 
-1. **Clone and build**:
+1. **Build**:
    ```bash
-   git clone <repository-url>
-   cd discord-mcp
    go mod tidy
    go build -o discord-mcp ./cmd/discord-mcp
    ```
